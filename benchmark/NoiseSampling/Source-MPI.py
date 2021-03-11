@@ -1,3 +1,4 @@
+from mpi4py import MPI
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL) # terminate program with Ctrl-C
 
@@ -30,7 +31,7 @@ from qulacs.gate import PauliRotation
 
 #ノイズ関連
 from qulacs.gate import DepolarizingNoise,TwoQubitDepolarizingNoise
-from qulacs import NoiseSimulator
+from qulacs import NoiseSimulatorMPI
 
 from qulacs import Observable
 
@@ -195,7 +196,7 @@ state.set_zero_state()
 #ハミルトニアンからパラメトリック回路を用意
 circuit = hamiltonian_ansatz(Ising_Hamiltonian,xdriver,max_depth,prob)
 #ノイズの高速計算
-simulator = NoiseSimulator(circuit,state)
+simulator = NoiseSimulatorMPI(circuit,state)
 
 time_sta = time.perf_counter()
 A = simulator.execute(sample_number)
@@ -207,6 +208,6 @@ time_sta = time.perf_counter()
 for i in range(sample_number):
     state.set_zero_state()
     circuit.update_quantum_state(state)
-    A[i] = state.sampling(1)[0]
+    A.append(state.sampling(1))
 time_end = time.perf_counter()
 print("Time on Normal Sampling: " + str(time_end - time_sta))
