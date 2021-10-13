@@ -1,20 +1,9 @@
-﻿
-#pragma once
+﻿#pragma once
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-#include <csim/update_ops.h>
-}
-#else
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-#include <csim/update_ops.h>
-#endif
-
+#include <csim/init_ops.hpp>
+#include <csim/memory_ops.hpp>
+#include <csim/stat_ops.hpp>
+#include <csim/update_ops.hpp>
 #include <iostream>
 #include <vector>
 
@@ -308,6 +297,8 @@ public:
     }
 
     virtual void* get_cuda_stream() const { return this->_cuda_stream; }
+
+    
 };
 
 class QuantumStateCpu : public QuantumStateBase {
@@ -569,12 +560,7 @@ public:
      * \~japanese-en 複素数をかける
      */
     virtual void multiply_coef(CPPCTYPE coef) override {
-#ifdef _MSC_VER
         state_multiply(coef, this->data_c(), this->dim);
-#else
-        CTYPE c_coef = {coef.real(), coef.imag()};
-        state_multiply(c_coef, this->data_c(), this->dim);
-#endif
     }
 
     virtual void multiply_elementwise_function(
@@ -637,4 +623,6 @@ DllExport QuantumState* permutate_qubit(
     const QuantumState* state, std::vector<UINT> qubit_order);
 DllExport QuantumState* drop_qubit(const QuantumState* state,
     std::vector<UINT> target, std::vector<UINT> projection);
+
+DllExport QuantumState* get_zero_state(int n);
 }  // namespace state

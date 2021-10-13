@@ -1,14 +1,6 @@
 
 #include <gtest/gtest.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/constant.h>
-#ifndef _MSC_VER
-}
-#endif
-
 #include <cppsim/circuit.hpp>
 #include <cppsim/observable.hpp>
 #include <cppsim/pauli_operator.hpp>
@@ -16,9 +8,10 @@ extern "C" {
 #include <cppsim/state_dm.hpp>
 #include <cppsim/type.hpp>
 #include <cppsim/utility.hpp>
+#include <csim/constant.hpp>
 #include <fstream>
 
-#include "../util/util.h"
+#include "../util/util.hpp"
 
 TEST(DensityMatrixObservableTest, CheckExpectationValue) {
     const UINT n = 4;

@@ -1,4 +1,4 @@
-
+#pragma once
 /**
  * @file pauli_operator.hpp
  * @brief Definition and basic functions for MultiPauliTerm
@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <boost/dynamic_bitset.hpp>
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -75,6 +76,8 @@ class DllExport PauliOperator {
 private:
     std::vector<SinglePauliOperator> _pauli_list;
     CPPCTYPE _coef;
+    boost::dynamic_bitset<> _z;
+    boost::dynamic_bitset<> _x;
 
 public:
     /**
@@ -186,6 +189,9 @@ public:
     PauliOperator(const std::vector<UINT>& target_qubit_index_list,
         const std::vector<UINT>& target_qubit_pauli_list, CPPCTYPE coef = 1.);
 
+    PauliOperator(const boost::dynamic_bitset<>& x,
+        const boost::dynamic_bitset<>& z, CPPCTYPE coef = 1.);
+
     /**
      * \~japanese-en
      * 自身の係数を返す
@@ -193,6 +199,22 @@ public:
      * @return 自身の係数
      */
     virtual CPPCTYPE get_coef() const { return _coef; }
+
+    /**
+     * \~japanese-en
+     * 自身のxビットを返す
+     *
+     * @return 自身のxビット
+     */
+    virtual boost::dynamic_bitset<> get_x_bits() const { return _x; }
+
+    /**
+     * \~japanese-en
+     * 自身のzビットを返す
+     *
+     * @return 自身のzビット
+     */
+    virtual boost::dynamic_bitset<> get_z_bits() const { return _z; }
 
     virtual ~PauliOperator(){};
 
@@ -233,9 +255,25 @@ public:
      */
     virtual PauliOperator* copy() const;
 
+    virtual void change_coef(CPPCTYPE new_coef);
+
     /**
      * \~japanese-en
      * パウリ演算子に対応する文字列を返す
      */
     virtual std::string get_pauli_string() const;
+   /**
+     * \~japanese-en
+     * このオブザーバブルに入っているものを、ゲートとしてstateに作用させる
+     * @param [in] state 入力
+     */
+    virtual void update_quantum_state(QuantumStateBase* instate);
+
+    PauliOperator operator*(const PauliOperator& target) const;
+
+    PauliOperator operator*(CPPCTYPE target) const;
+
+    PauliOperator& operator*=(const PauliOperator& target);
+
+    PauliOperator& operator*=(CPPCTYPE target);
 };

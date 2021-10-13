@@ -1,13 +1,5 @@
 #include <gtest/gtest.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/update_ops.h>
-#ifndef _MSC_VER
-}
-#endif
-
 #include <cmath>
 #include <cppsim/gate.hpp>
 #include <cppsim/gate_factory.hpp>
@@ -16,10 +8,11 @@ extern "C" {
 #include <cppsim/pauli_operator.hpp>
 #include <cppsim/state_dm.hpp>
 #include <cppsim/utility.hpp>
+#include <csim/update_ops.hpp>
 #include <functional>
 #include <numeric>
 
-#include "../util/util.h"
+#include "../util/util.hpp"
 
 TEST(DensityMatrixGeneralGateTest, ProbabilisticGate) {
     auto gate1 = gate::X(0);

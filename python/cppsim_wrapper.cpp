@@ -5,17 +5,9 @@
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/update_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-}
-#else
-#include <csim/update_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-#endif
+#include <csim/update_ops.hpp>
+#include <csim/memory_ops.hpp>
+#include <csim/stat_ops.hpp>
 
 #include <cppsim/observable.hpp>
 #include <cppsim/pauli_operator.hpp>
@@ -53,6 +45,7 @@ PYBIND11_MODULE(qulacs_core, m) {
     py::class_<PauliOperator>(m, "PauliOperator")
         .def(py::init<std::complex<double>>(), "Constructor", py::arg("coef"))
         .def(py::init<std::string, std::complex<double>>(), "Constructor", py::arg("pauli_string"), py::arg("coef"))
+        .def(py::init<boost::dynamic_bitset<>, boost::dynamic_bitset<>, std::complex<double>>(), "Constructor", py::arg("x_bits"), py::arg("z_bits"), py::arg("coef"))
         //.def(py::init<std::vector<unsigned int>&, std::string, std::complex<double>>(), "Constructor")
         //.def(py::init<std::vector<unsigned int>&, std::vector<unsigned int>&, std::complex<double>>(), "Constructor")
         //.def(py::init<std::vector<unsigned int>&, std::complex<double>>(), "Constructor")
@@ -64,6 +57,14 @@ PYBIND11_MODULE(qulacs_core, m) {
         .def("get_transition_amplitude", &PauliOperator::get_transition_amplitude, "Get transition amplitude", py::arg("state_bra"), py::arg("state_ket"))
         .def("copy", &PauliOperator::copy, pybind11::return_value_policy::take_ownership, "Create copied instance of Pauli operator class")
         .def("get_pauli_string", &PauliOperator::get_pauli_string, "get pauli string")
+        .def("change_coef", &PauliOperator::change_coef, "change coefficient")
+        .def("get_x_bits", &PauliOperator::get_x_bits, "get x bits")
+        .def("get_z_bits", &PauliOperator::get_z_bits, "get z bits")
+        .def(py::self * py::self)
+        .def("__mul__", [](const PauliOperator &a, std::complex<double> &b) { return a * b; }, py::is_operator())
+        .def(py::self *= py::self)
+        .def("__IMUL__", [](PauliOperator &a, std::complex<double> &b) { return a *= b; }, py::is_operator())
+        .def("update_quantum_state", &PauliOperator::update_quantum_state, "do update")
         ;
 
     py::class_<GeneralQuantumOperator>(m, "GeneralQuantumOperator")
@@ -83,6 +84,22 @@ PYBIND11_MODULE(qulacs_core, m) {
         .def("get_transition_amplitude", &GeneralQuantumOperator::get_transition_amplitude, "Get transition amplitude", py::arg("state_bra"), py::arg("state_ket"))
         .def("__str__", &GeneralQuantumOperator::to_string, "to string")
         //.def_static("get_split_GeneralQuantumOperator", &(GeneralQuantumOperator::get_split_observable));
+        .def("copy", &GeneralQuantumOperator::copy, pybind11::return_value_policy::take_ownership, "Create copied instance of General Quantum operator class")
+        .def(py::self + py::self)
+        .def("__add__", [](const GeneralQuantumOperator &a, const PauliOperator& b) { return a + b; }, py::is_operator())        
+        .def(py::self += py::self)
+        .def("__IADD__", [](GeneralQuantumOperator &a, const PauliOperator& b) { return a += b; }, py::is_operator())        
+        .def(py::self - py::self)
+        .def("__sub__", [](const GeneralQuantumOperator &a, const PauliOperator& b) { return a - b; }, py::is_operator())        
+        .def(py::self -= py::self)
+        .def("__ISUB__", [](GeneralQuantumOperator &a, const PauliOperator& b) { return a -= b; }, py::is_operator())        
+        .def(py::self * py::self)
+        .def("__mul__", [](const GeneralQuantumOperator &a, const PauliOperator &b) { return a * b; }, py::is_operator())
+        .def("__mul__", [](const GeneralQuantumOperator &a, std::complex<double> &b) { return a * b; }, py::is_operator())
+        .def(py::self *= py::self)
+        .def("__IMUL__", [](GeneralQuantumOperator &a, const PauliOperator &b) { return a *= b; }, py::is_operator())
+        .def("__IMUL__", [](GeneralQuantumOperator &a, std::complex<double> &b) { return a *= b; }, py::is_operator())
+        .def("update_quantum_state",&GeneralQuantumOperator::update_quantum_state,"do update")
         ;
     auto mquantum_operator = m.def_submodule("quantum_operator");
     mquantum_operator.def("create_quantum_operator_from_openfermion_file", &quantum_operator::create_general_quantum_operator_from_openfermion_file, pybind11::return_value_policy::take_ownership);
@@ -110,8 +127,10 @@ PYBIND11_MODULE(qulacs_core, m) {
         .def("add_random_operator", &HermitianQuantumOperator::add_random_operator, "Add random pauli operator", py::arg("operator_count"))
         .def("solve_ground_state_eigenvalue_by_arnoldi_method", &HermitianQuantumOperator::solve_ground_state_eigenvalue_by_arnoldi_method,
             "Compute ground state eigenvalue by arnoldi method", py::arg("state"), py::arg("iter_count"), py::arg("mu") = 0.0)
-        .def("solve_ground_state_eigenvalue_by_power_method", &HermitianQuantumOperator::solve_ground_state_eigenvalue_by_arnoldi_method,
+        .def("solve_ground_state_eigenvalue_by_power_method", &HermitianQuantumOperator::solve_ground_state_eigenvalue_by_power_method,
             "Compute ground state eigenvalue by power method", py::arg("state"), py::arg("iter_count"), py::arg("mu") = 0.0)
+        .def("solve_ground_state_eigenvalue_by_lanczos_method", &HermitianQuantumOperator::solve_ground_state_eigenvalue_by_lanczos_method,
+            "Compute ground state eigenvalue by lanczos method", py::arg("state"), py::arg("iter_count"), py::arg("mu") = 0.0)
         .def("apply_to_state", &HermitianQuantumOperator::apply_to_state, "Apply observable to `state_to_be_multiplied`. The result is stored into `dst_state`.",
             py::arg("work_state"), py::arg("state_to_be_multiplied"), py::arg("dst_state"))
         .def("__str__", &HermitianQuantumOperator::to_string, "to string")
@@ -250,13 +269,61 @@ PYBIND11_MODULE(qulacs_core, m) {
     auto mstate = m.def_submodule("state");
     //using namespace state;
 #ifdef _USE_GPU
-    mstate.def("inner_product", py::overload_cast<const QuantumStateGpu*, const QuantumStateGpu*>(&state::inner_product), "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
+    mstate.def("inner_product",
+        py::overload_cast<const QuantumStateGpu *, const QuantumStateGpu *>(
+            &state::inner_product),
+        "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
 #endif
-    mstate.def("inner_product", py::overload_cast<const QuantumState*, const QuantumState*>(&state::inner_product), "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
-    //mstate.def("inner_product", &state::inner_product);
-    mstate.def("tensor_product", &state::tensor_product, pybind11::return_value_policy::take_ownership, "Get tensor product of states", py::arg("state_left"), py::arg("state_right"));
-    mstate.def("permutate_qubit", &state::permutate_qubit, pybind11::return_value_policy::take_ownership, "Permutate qubits from state", py::arg("state"), py::arg("order"));
-    mstate.def("drop_qubit", &state::drop_qubit, pybind11::return_value_policy::take_ownership, "Drop qubits from state", py::arg("state"), py::arg("target"), py::arg("projection"));
+    mstate.def("inner_product",
+        py::overload_cast<const QuantumState *, const QuantumState *>(
+            &state::inner_product),
+        "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
+    // mstate.def("inner_product", &state::inner_product);
+    // mstate.def("tensor_product", &state::tensor_product,
+    // pybind11::return_value_policy::take_ownership, "Get tensor product of
+    // states", py::arg("state_left"), py::arg("state_right"));
+    // mstate.def("permutate_qubit", &state::permutate_qubit,
+    // pybind11::return_value_policy::take_ownership, "Permutate qubits from
+    // state", py::arg("state"), py::arg("order"));
+    mstate.def("tensor_product",
+        py::overload_cast<const QuantumState *, const QuantumState *>(
+            &state::tensor_product),
+        pybind11::return_value_policy::take_ownership,
+        "Get tensor product of states", py::arg("state_left"),
+        py::arg("state_right"));
+    mstate.def("tensor_product",
+        py::overload_cast<const DensityMatrix *, const DensityMatrix *>(
+            &state::tensor_product),
+        pybind11::return_value_policy::take_ownership,
+        "Get tensor product of states", py::arg("state_left"),
+        py::arg("state_right"));
+    mstate.def("permutate_qubit",
+        py::overload_cast<const QuantumState *, std::vector<UINT>>(
+            &state::permutate_qubit),
+        pybind11::return_value_policy::take_ownership,
+        "Permutate qubits from state", py::arg("state"), py::arg("order"));
+    mstate.def("permutate_qubit",
+        py::overload_cast<const DensityMatrix *, std::vector<UINT>>(
+            &state::permutate_qubit),
+        pybind11::return_value_policy::take_ownership,
+        "Permutate qubits from state", py::arg("state"), py::arg("order"));
+
+    mstate.def("drop_qubit", &state::drop_qubit,
+        pybind11::return_value_policy::take_ownership, "Drop qubits from state",
+        py::arg("state"), py::arg("target"), py::arg("projection"));
+    mstate.def("get_zero_state", &state::get_zero_state,
+        pybind11::return_value_policy::take_ownership, "get all zero sate(not |0000>)",
+        py::arg("n"));
+    mstate.def("partial_trace",
+        py::overload_cast<const QuantumState *, std::vector<UINT>>(
+            &state::partial_trace),
+        pybind11::return_value_policy::take_ownership, "Take partial trace",
+        py::arg("state"), py::arg("target_traceout"));
+    mstate.def("partial_trace",
+        py::overload_cast<const DensityMatrix *, std::vector<UINT>>(
+            &state::partial_trace),
+        pybind11::return_value_policy::take_ownership, "Take partial trace",
+        py::arg("state"), py::arg("target_traceout"));
 
     py::class_<QuantumGateBase>(m, "QuantumGateBase")
         .def("update_quantum_state", &QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))
@@ -542,6 +609,8 @@ PYBIND11_MODULE(qulacs_core, m) {
         .def("add_parametric_RY_gate", &ParametricQuantumCircuit::add_parametric_RY_gate, "Add parametric Pauli-Y rotation gate", py::arg("index"), py::arg("angle"))
         .def("add_parametric_RZ_gate", &ParametricQuantumCircuit::add_parametric_RZ_gate, "Add parametric Pauli-Z rotation gate", py::arg("index"), py::arg("angle"))
         .def("add_parametric_multi_Pauli_rotation_gate", &ParametricQuantumCircuit::add_parametric_multi_Pauli_rotation_gate, "Add parametric multi-qubit Pauli rotation gate", py::arg("index_list"), py::arg("pauli_ids"), py::arg("angle"))
+
+        .def("backprop",&ParametricQuantumCircuit::backprop,"do backprop",py::arg("obs"))
 
         .def("__repr__", [](const ParametricQuantumCircuit &p) {return p.to_string(); });
     ;

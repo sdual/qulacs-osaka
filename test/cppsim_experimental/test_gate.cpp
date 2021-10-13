@@ -1,21 +1,14 @@
 #include <gtest/gtest.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/update_ops.h>
-#ifndef _MSC_VER
-}
-#endif
-
 #include <cmath>
 #include <cppsim_experimental/gate.hpp>
 #include <cppsim_experimental/observable.hpp>
 #include <cppsim_experimental/state.hpp>
 #include <cppsim_experimental/utility.hpp>
+#include <csim/update_ops.hpp>
 #include <functional>
 
-#include "../util/util.h"
+#include "../util/util.hpp"
 
 TEST(GateTest, ApplySingleQubitGate) {
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2),

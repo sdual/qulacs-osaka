@@ -1,23 +1,16 @@
 #include <gtest/gtest.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/constant.h>
-#ifndef _MSC_VER
-}
-#endif
-
 #include <cppsim_experimental/circuit.hpp>
 #include <cppsim_experimental/gate.hpp>
 #include <cppsim_experimental/observable.hpp>
 #include <cppsim_experimental/state.hpp>
 #include <cppsim_experimental/type.hpp>
 #include <cppsim_experimental/utility.hpp>
+#include <csim/constant.hpp>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
 
-#include "../util/util.h"
+#include "../util/util.hpp"
 
 TEST(CircuitTest, CircuitBasic) {
     Eigen::MatrixXcd Identity(2, 2), X(2, 2), Y(2, 2), Z(2, 2), H(2, 2),

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <boost/dynamic_bitset.hpp>
 #include <cassert>
 #include <cstring>
 #include <fstream>
@@ -12,20 +13,13 @@
 
 #include "type.hpp"
 #include "utility.hpp"
-
 #ifdef _USE_GPU
 #include <gpusim/stat_ops.h>
 #endif
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/stat_ops.h>
-#include <csim/stat_ops_dm.h>
-}
-#else
-#include <csim/stat_ops.h>
-#include <csim/stat_ops_dm.h>
-#endif
+#include <csim/stat_ops.hpp>
+#include <csim/stat_ops_dm.hpp>
+#include "gate_factory.hpp"
 #include "pauli_operator.hpp"
 #include "state.hpp"
 
@@ -100,8 +94,38 @@ PauliOperator::PauliOperator(const std::vector<UINT>& target_qubit_index_list,
     }
 }
 
+PauliOperator::PauliOperator(const boost::dynamic_bitset<>& x,
+    const boost::dynamic_bitset<>& z, CPPCTYPE coef) {
+    _coef = coef;
+    for (UINT i = 0; i < x.size(); i++) {
+        UINT pauli_type = 0;
+        if (x[i] && !z[i]) {
+            pauli_type = 1;
+        } else if (x[i] && z[i]) {
+            pauli_type = 2;
+        } else if (!x[i] && z[i]) {
+            pauli_type = 3;
+        }
+        if (pauli_type != 0) {
+            this->add_single_Pauli(i, pauli_type);
+        }
+    }
+}
+
 void PauliOperator::add_single_Pauli(UINT qubit_index, UINT pauli_type) {
     this->_pauli_list.push_back(SinglePauliOperator(qubit_index, pauli_type));
+    while (_x.size() <= qubit_index) {
+        _x.resize(_x.size() * 2 + 1);
+        _z.resize(_z.size() * 2 + 1);
+    }
+    if (pauli_type == 1) {
+        _x.set(qubit_index);
+    } else if (pauli_type == 2) {
+        _x.set(qubit_index);
+        _z.set(qubit_index);
+    } else if (pauli_type == 3) {
+        _z.set(qubit_index);
+    }
 }
 
 CPPCTYPE PauliOperator::get_expectation_value(
@@ -211,4 +235,141 @@ std::string PauliOperator::get_pauli_string() const {
     }
     res.pop_back();
     return res;
+}
+
+void PauliOperator::change_coef(CPPCTYPE new_coef) { _coef = new_coef; }
+
+PauliOperator PauliOperator::operator*(const PauliOperator& target) const {
+    CPPCTYPE bits_coef = 1.0;
+    CPPCTYPE I = 1.0i;
+    auto x = _x;
+    auto z = _z;
+    auto target_x = target.get_x_bits();
+    auto target_z = target.get_x_bits();
+    if (target_x.size() != _x.size()) {
+        ITYPE max_size = std::max(_x.size(), target_x.size());
+        x.resize(max_size);
+        z.resize(max_size);
+        target_x.resize(max_size);
+        target_z.resize(max_size);
+    }
+    ITYPE i;
+#pragma omp parallel for
+    for (i = 0; i < x.size(); i++) {
+        if (x[i] && !z[i]) {  // X
+            if (!target_x[i] && target_z[i]) {
+                bits_coef = bits_coef * -I;
+            } else if (target_x[i] && target_z[i]) {
+                bits_coef = bits_coef * I;
+            }
+        } else if (!x[i] && z[i]) {             // Z
+            if (target_x[i] && !target_z[i]) {  // X
+                bits_coef = bits_coef * -I;
+            } else if (target_x[i] && target_z[i]) {  // Y
+                bits_coef = bits_coef * I;
+            }
+        } else if (x[i] && z[i]) {              // Y
+            if (target_x[i] && !target_z[i]) {  // X
+                bits_coef = bits_coef * I;
+            } else if (!target_x[i] && target_z[i]) {  // Z
+                bits_coef = bits_coef * I;
+            }
+        }
+    }
+    PauliOperator res(
+        x ^ target_x, z ^ target_z, _coef * target.get_coef() * bits_coef);
+    return res;
+}
+
+PauliOperator PauliOperator::operator*(CPPCTYPE target) const {
+    PauliOperator res(_x, _z, _coef * target);
+    return res;
+}
+
+PauliOperator& PauliOperator::operator*=(const PauliOperator& target) {
+    _coef *= target.get_coef();
+    CPPCTYPE I = 1.0i;
+    auto target_x = target.get_x_bits();
+    auto target_z = target.get_z_bits();
+    ITYPE max_size = std::max(_x.size(), target_x.size());
+    if (target_x.size() != _x.size()) {
+        _x.resize(max_size);
+        _z.resize(max_size);
+        target_x.resize(max_size);
+        target_z.resize(max_size);
+    }
+    ITYPE i;
+#pragma omp parallel for
+    for (i = 0; i < _x.size(); i++) {
+        if (_x[i] && !_z[i]) {  // X
+            if (!target_x[i] && target_z[i]) {
+                _coef *= -I;
+            } else if (target_x[i] && target_z[i]) {
+                _coef *= I;
+            }
+        } else if (!_x[i] && _z[i]) {           // Z
+            if (target_x[i] && !target_z[i]) {  // X
+                _coef *= -I;
+            } else if (target_x[i] && target_z[i]) {  // Y
+                _coef *= I;
+            }
+        } else if (_x[i] && _z[i]) {            // Y
+            if (target_x[i] && !target_z[i]) {  // X
+                _coef *= I;
+            } else if (!target_x[i] && target_z[i]) {  // Z
+                _coef *= I;
+            }
+        }
+    }
+    auto x_bit = _x ^ target_x;
+    auto z_bit = _z ^ target_z;
+    _x.clear();
+    _z.clear();
+    _pauli_list.clear();
+    _x.resize(max_size);
+    _z.resize(max_size);
+#pragma omp parallel for
+    for (i = 0; i < x_bit.size(); i++) {
+        ITYPE pauli_type = 0;
+        if (x_bit[i] && !z_bit[i]) {
+            pauli_type = 1;
+        } else if (x_bit[i] && z_bit[i]) {
+            pauli_type = 2;
+        } else if (!x_bit[i] && z_bit[i]) {
+            pauli_type = 3;
+        }
+        if (pauli_type != 0) {
+            this->add_single_Pauli(i, pauli_type);
+        }
+    }
+    return *this;
+}
+
+PauliOperator& PauliOperator::operator*=(CPPCTYPE target) {
+    _coef *= target;
+    return *this;
+}
+
+//made by watle
+void PauliOperator::update_quantum_state(QuantumStateBase* instate){
+    //PauliOperator　wo gate tosite kanngaeru
+    std::vector<UINT> index_list=this->get_index_list();
+    std::vector<UINT> pauli_list=this->get_pauli_id_list();
+    for(int ii=0;ii<index_list.size();ii++){
+        if(pauli_list[ii]==1){
+            auto x_gate=gate::X(index_list[ii]);
+            x_gate->update_quantum_state(instate);
+            delete x_gate;
+        }else if(pauli_list[ii]==2){
+            auto y_gate=gate::Y(index_list[ii]);
+            y_gate->update_quantum_state(instate);
+            delete y_gate;
+        }else if(pauli_list[ii]==3){
+            auto z_gate=gate::Z(index_list[ii]);
+            z_gate->update_quantum_state(instate);
+            delete z_gate;
+        }
+    }
+    instate->multiply_coef(this->get_coef());
+    return;
 }

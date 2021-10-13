@@ -1,14 +1,7 @@
 #pragma once
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-}
-#else
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-#endif
+#include <csim/update_ops.hpp>
+#include <csim/update_ops_dm.hpp>
 
 #include "gate.hpp"
 #include "pauli_operator.hpp"
@@ -67,7 +60,7 @@ public:
                     target_index_list.data(), pauli_id_list.data(),
                     (UINT)target_index_list.size(), state->data(), state->dim,
                     state->get_cuda_stream(), state->device_number);
-                //_update_func_gpu(this->_target_qubit_list[0].index(), _angle,
+                // _update_func_gpu(this->_target_qubit_list[0].index(), _angle,
                 // state->data(), state->dim);
             } else {
                 multi_qubit_Pauli_gate_partial_list(target_index_list.data(),

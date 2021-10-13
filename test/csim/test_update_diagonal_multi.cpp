@@ -3,23 +3,13 @@
 
 #include <Eigen/Core>
 #include <algorithm>
+#include <csim/init_ops.hpp>
+#include <csim/memory_ops.hpp>
+#include <csim/stat_ops.hpp>
+#include <csim/update_ops.hpp>
 #include <string>
 
-#include "../util/util.h"
-
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-#include <csim/update_ops.h>
-}
-#else
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/stat_ops.h>
-#include <csim/update_ops.h>
-#endif
+#include "../util/util.hpp"
 
 TEST(UpdateTest, MultiQubitDiagonalMatrixTest) {
     const UINT n = 6;

@@ -1,18 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "../util/util.h"
+#include <csim/init_ops.hpp>
+#include <csim/memory_ops.hpp>
+#include <csim/utility.hpp>
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/utility.h>
-}
-#else
-#include <csim/init_ops.h>
-#include <csim/memory_ops.h>
-#include <csim/utility.h>
-#endif
+#include "../util/util.hpp"
 
 TEST(MemoryOperationTest, AllocateAndRelease) {
     const UINT n = 10;

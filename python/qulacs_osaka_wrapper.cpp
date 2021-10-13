@@ -8,18 +8,12 @@
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
 
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-#include <csim/memory_ops.h>
-#include <csim/memory_ops_dm.h>
-#include <csim/stat_ops.h>
-#include <csim/stat_ops_dm.h>
-#ifndef _MSC_VER
-}
-#endif
+#include <csim/update_ops.hpp>
+#include <csim/update_ops_dm.hpp>
+#include <csim/memory_ops.hpp>
+#include <csim/memory_ops_dm.hpp>
+#include <csim/stat_ops.hpp>
+#include <csim/stat_ops_dm.hpp>
 
 #include <cppsim_experimental/observable.hpp>
 #include <cppsim_experimental/state.hpp>
@@ -28,10 +22,16 @@ extern "C" {
 #include <cppsim_experimental/circuit.hpp>
 #include <cppsim_experimental/causal_cone.hpp>
 #include <cppsim_experimental/noisesimulator.hpp>
+#include <cppsim_experimental/single_fermion_operator.hpp>
+#include <cppsim_experimental/fermion_operator.hpp>
+#include <cppsim_experimental/jordan_wigner.hpp>
+#include <cppsim_experimental/bravyi_kitaev.hpp>
 
 #ifdef _USE_GPU
 #include <cppsim_experimental/state_gpu.hpp>
 #endif
+
+#undef _USE_MPI
 
 #ifdef _USE_MPI
 #include <mpisim/noisesimulatorMPI.hpp>
@@ -51,6 +51,11 @@ PYBIND11_MODULE(qulacs_osaka_core, m) {
         .def("add_single_Pauli", &MultiQubitPauliOperator::add_single_Pauli, "Add Pauli operator to this term", py::arg("index"), py::arg("pauli_string"))
         .def("get_expectation_value", &MultiQubitPauliOperator::get_expectation_value, "Get expectation value", py::arg("state"))
         .def("get_transition_amplitude", &MultiQubitPauliOperator::get_transition_amplitude, "Get transition amplitude", py::arg("state_bra"), py::arg("state_ket"))
+        .def("copy", &MultiQubitPauliOperator::copy, "Make copy")
+        .def("__str__", &MultiQubitPauliOperator::to_string, "to string")
+        .def(py::self == py::self)
+        .def(py::self * py::self)
+        .def(py::self *= py::self)
         ;
 
     py::class_<Observable>(m, "Observable")
@@ -63,7 +68,51 @@ PYBIND11_MODULE(qulacs_osaka_core, m) {
         }, "Get Pauli term", py::arg("index"))
         .def("get_expectation_value", &Observable::get_expectation_value, "Get expectation value", py::arg("state"))
         .def("get_transition_amplitude", &Observable::get_transition_amplitude, "Get transition amplitude", py::arg("state_bra"), py::arg("state_ket"))
+        .def("copy", &Observable::copy, "Make copy")
+        .def("__str__", &Observable::to_string, "to string")
+        .def(py::self + py::self)
+        .def(py::self += py::self)
+        .def(py::self - py::self)
+        .def(py::self -= py::self)
+        .def(py::self * py::self)
+        .def("__mul__", [](const Observable &a, std::complex<double> &b) { return a * b; }, py::is_operator())
+        .def(py::self *= py::self)
+        .def("__IMUL__", [](Observable &a, std::complex<double> &b) { return a *= b; }, py::is_operator())
         ;
+
+    py::class_<SingleFermionOperator>(m, "SingleFermionOperator")
+        .def(py::init<>(), "Constructor")
+        .def(py::init<const std::vector<unsigned int>&, const std::vector<unsigned int>&>(), "Constructor", py::arg("target_index_list"), py::arg("action_id_list"))
+        .def(py::init<std::string>(), "Constructor", py::arg("action_string"))
+        .def("get_target_index_list", &SingleFermionOperator::get_target_index_list, "Get list of target indices")
+        .def("get_action_id_list", &SingleFermionOperator::get_action_id_list, "Get list of action IDs (Create action: 1, Destroy action: 0)")
+        .def("__str__", &SingleFermionOperator::to_string, "to string")
+        .def(py::self * py::self)
+        .def(py::self *= py::self)
+        ;
+
+    py::class_<FermionOperator>(m, "FermionOperator")
+        .def(py::init<>(), "Constructor")
+        .def("add_term", (void (FermionOperator::*)(std::complex<double>, SingleFermionOperator))&FermionOperator::add_term, "Add Fermion operator", py::arg("coef"), py::arg("fermion_operator"))
+        .def("add_term", (void (FermionOperator::*)(std::complex<double>, std::string))&FermionOperator::add_term, "Add Fermion operator", py::arg("coef"), py::arg("action_string"))
+        .def("get_term_count", &FermionOperator::get_term_count, "Get count of Fermion terms")
+        .def("get_term",&FermionOperator::get_term, "Get a Fermion term", py::arg("index"))
+        .def("get_fermion_list", &FermionOperator::get_fermion_list, "Get term(SingleFermionOperator) list")
+        .def("get_coef_list", &FermionOperator::get_coef_list, "Get coef list")
+        .def("copy", &FermionOperator::copy, "Make copy")
+        .def(py::self + py::self)
+        .def(py::self += py::self)
+        .def(py::self - py::self)
+        .def(py::self -= py::self)
+        .def(py::self * py::self)
+        .def("__mul__", [](const FermionOperator &a, std::complex<double> &b) { return a * b; }, py::is_operator())
+        .def(py::self *= py::self)
+        .def("__IMUL__", [](FermionOperator &a, std::complex<double> &b) { return a *= b; }, py::is_operator())
+        ;
+
+    auto m_transforms = m.def_submodule("transforms", "FermionOperator transforms");
+    m_transforms.def("jordan_wigner", &transforms::jordan_wigner, "Apply the Jordan-Wigner transform to a FermionOperator", py::arg("fermion_operator"));
+    m_transforms.def("bravyi_kitaev", &transforms::bravyi_kitaev, "Apply the Bravyi-Kitaev transform to a FermionOperator", py::arg("fermion_operator"), py::arg("n_qubits"));
     /*
     auto mquantum_operator = m.def_submodule("quantum_operator");
     mquantum_operator.def("create_quantum_operator_from_openfermion_file", &quantum_operator::create_general_quantum_operator_from_openfermion_file, pybind11::return_value_policy::take_ownership);
@@ -180,23 +229,64 @@ PYBIND11_MODULE(qulacs_osaka_core, m) {
         .def("get_qubit_count", [](const StateVectorGpu& state) -> unsigned int {return (unsigned int) state.qubit_count; }, "Get qubit count")
         .def("__repr__", [](const StateVectorGpu &p) {return p.to_string(); });
         ;
-		m.def("StateVectorGpu", [](const unsigned int qubit_count) {
-			auto ptr = new StateVectorGpu(qubit_count);
-			return ptr;
-		}, "StateVectorGpu");
+	// m.def("StateVectorGpu", [](const unsigned int qubit_count) {
+        //	auto ptr = new StateVectorGpu(qubit_count);
+	//		return ptr;
+	//	}, "StateVectorGpu");
 
 #endif
 
+    
     auto mstate = m.def_submodule("state");
-    //using namespace state;
+        // using namespace state;
 #ifdef _USE_GPU
-    mstate.def("inner_product", py::overload_cast<const StateVectorGpu*, const StateVectorGpu*>(&state::inner_product), "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
+        mstate.def("inner_product",
+            py::overload_cast<const StateVectorGpu *, const StateVectorGpu *>(
+                &state::inner_product),
+            "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
 #endif
-    mstate.def("inner_product", py::overload_cast<const StateVectorCpu*, const StateVectorCpu*>(&state::inner_product), "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
-    //mstate.def("inner_product", &state::inner_product);
-	mstate.def("tensor_product", &state::tensor_product, pybind11::return_value_policy::take_ownership, "Get tensor product of states", py::arg("state_left"), py::arg("state_right"));
-	mstate.def("permutate_qubit", &state::permutate_qubit, pybind11::return_value_policy::take_ownership, "Permutate qubits from state", py::arg("state"), py::arg("order"));
-	mstate.def("drop_qubit", &state::drop_qubit, pybind11::return_value_policy::take_ownership, "Drop qubits from state", py::arg("state"), py::arg("target"), py::arg("projection"));
+        mstate.def("inner_product",
+            py::overload_cast<const StateVectorCpu *, const StateVectorCpu *>(
+                &state::inner_product),
+            "Get inner product", py::arg("state_bra"), py::arg("state_ket"));
+        mstate.def("tensor_product",
+            py::overload_cast<const StateVectorCpu *, const StateVectorCpu *>(
+                &state::tensor_product),
+            pybind11::return_value_policy::take_ownership,
+            "Get tensor product of states", py::arg("state_left"),
+            py::arg("state_right"));
+        mstate.def("tensor_product",
+            py::overload_cast<const DensityMatrix *, const DensityMatrix *>(
+                &state::tensor_product),
+            pybind11::return_value_policy::take_ownership,
+            "Get tensor product of states", py::arg("state_left"),
+            py::arg("state_right"));
+        mstate.def("permutate_qubit",
+            py::overload_cast<const StateVectorCpu *, std::vector<UINT>>(
+                &state::permutate_qubit),
+            pybind11::return_value_policy::take_ownership,
+            "Permutate qubits from state", py::arg("state"), py::arg("order"));
+        mstate.def("permutate_qubit",
+            py::overload_cast<const DensityMatrix *, std::vector<UINT>>(
+                &state::permutate_qubit),
+            pybind11::return_value_policy::take_ownership,
+            "Permutate qubits from state", py::arg("state"), py::arg("order"));
+
+        mstate.def("drop_qubit", &state::drop_qubit,
+            pybind11::return_value_policy::take_ownership,
+            "Drop qubits from state", py::arg("state"), py::arg("target"),
+            py::arg("projection"));
+        mstate.def("partial_trace",
+            py::overload_cast<const StateVectorCpu *, std::vector<UINT>>(
+                &state::partial_trace),
+            pybind11::return_value_policy::take_ownership, "Take partial trace",
+            py::arg("state"), py::arg("target_traceout"));
+        mstate.def("partial_trace",
+            py::overload_cast<const DensityMatrix *, std::vector<UINT>>(
+                &state::partial_trace),
+            pybind11::return_value_policy::take_ownership, "Take partial trace",
+            py::arg("state"), py::arg("target_traceout"));
+
 
     py::class_<QuantumGateBase>(m, "QuantumGateBase")
         .def("update_quantum_state", &QuantumGateBase::update_quantum_state, "Update quantum state", py::arg("state"))

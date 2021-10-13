@@ -1,13 +1,5 @@
 #pragma once
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/type.h>
-}
-#else
-#include <csim/type.h>
-#endif
-
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <cereal/access.hpp>
@@ -20,6 +12,7 @@ extern "C" {
 #include <cereal/types/tuple.hpp>
 #include <cereal/types/vector.hpp>
 #include <complex>
+#include <csim/type.hpp>
 typedef std::complex<double> CPPCTYPE;
 typedef Eigen::VectorXcd ComplexVector;
 

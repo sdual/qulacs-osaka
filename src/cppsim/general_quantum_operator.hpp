@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "type.hpp"
-
 class PauliOperator;
 class QuantumStateBase;
 
@@ -175,6 +174,7 @@ public:
      * state_to_be_multiplied に GeneralQuantumOperator を作用させる．
      * 結果は dst_state に格納される．dst_state
      * はすべての要素を0に初期化してから計算するため， 任意の状態を渡してよい．
+     * @param [in] work_state 作業用の状態
      * @param [in] state_to_be_multiplied 作用を受ける状態
      * @param [in] dst_state 結果を格納する状態
      */
@@ -182,11 +182,52 @@ public:
         const QuantumStateBase& state_to_be_multiplied,
         QuantumStateBase* dst_state) const;
 
-private:
+    /**
+     * \~japanese-en
+     * このオブザーバブルに入っているものを、ゲートとしてstateに作用させたものを返す。
+     stateは変えない。
+     * @param [in] state 入力
+     */
+    virtual void update_quantum_state(QuantumStateBase*state);
+
+    virtual GeneralQuantumOperator* copy() const;
+
+    GeneralQuantumOperator operator+(
+        const GeneralQuantumOperator& target) const;
+
+    GeneralQuantumOperator operator+(const PauliOperator& target) const;
+
+    GeneralQuantumOperator& operator+=(const GeneralQuantumOperator& target);
+
+    GeneralQuantumOperator& operator+=(const PauliOperator& target);
+
+    GeneralQuantumOperator operator-(
+        const GeneralQuantumOperator& target) const;
+
+    GeneralQuantumOperator operator-(const PauliOperator& target) const;
+
+    GeneralQuantumOperator& operator-=(const GeneralQuantumOperator& target);
+
+    GeneralQuantumOperator& operator-=(const PauliOperator& target);
+    GeneralQuantumOperator operator*(
+        const GeneralQuantumOperator& target) const;
+
+    GeneralQuantumOperator operator*(const PauliOperator& target) const;
+
+    GeneralQuantumOperator operator*(CPPCTYPE target) const;
+
+    GeneralQuantumOperator& operator*=(const GeneralQuantumOperator& target);
+
+    GeneralQuantumOperator& operator*=(const PauliOperator& target);
+
+    GeneralQuantumOperator& operator*=(CPPCTYPE target);
+
+   
+protected:
     /**
      * \~japanese-en
      * solve_ground_state_eigenvalue_by_power_method の mu
-     * のデフォルト値を計算する．
+     * のデフォルト値として，各 operator の係数の絶対値の和を計算する．
      */
     CPPCTYPE calculate_default_mu() const;
 };

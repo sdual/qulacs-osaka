@@ -1,20 +1,12 @@
 
-#ifndef _MSC_VER
-extern "C" {
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-#include <csim/utility.h>
-}
-#else
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-#include <csim/utility.h>
-#endif
+#include "gate_matrix.hpp"
 
 #include <algorithm>
+#include <csim/update_ops.hpp>
+#include <csim/update_ops_dm.hpp>
+#include <csim/utility.hpp>
 #include <numeric>
 
-#include "gate_matrix.hpp"
 #include "state.hpp"
 #include "type.hpp"
 #ifdef _USE_GPU

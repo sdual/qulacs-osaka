@@ -1,21 +1,13 @@
 #pragma once
 
+#include <csim/constant.hpp>
+#include <csim/update_ops.hpp>
+#include <csim/update_ops_cpp.hpp>
+#include <csim/update_ops_dm.hpp>
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
-
-#ifndef _MSC_VER
-extern "C" {
-#endif
-#include <csim/constant.h>
-#include <csim/update_ops.h>
-#include <csim/update_ops_dm.h>
-#ifndef _MSC_VER
-}
-#endif
-
-#include <csim/update_ops_cpp.hpp>
 
 #ifdef _USE_GPU
 #include <gpusim/update_ops_cuda.h>
