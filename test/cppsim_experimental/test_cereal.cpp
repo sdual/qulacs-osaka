@@ -4,6 +4,7 @@
 #include <cppsim_experimental/circuit.hpp>
 #include <cppsim_experimental/gate.hpp>
 #include <cppsim_experimental/noisesimulator.hpp>
+#include <cppsim_experimental/observable.hpp>
 #include <cppsim_experimental/state.hpp>
 #include <fstream>
 #include <iostream>
@@ -185,5 +186,28 @@ TEST(CerealTest, serealize_QuantumCircuit_for_python) {
     circuit2.update_quantum_state(&b);
     for (int i = 0; i < (1 << 10); ++i) {
         ASSERT_NEAR(abs(a.data_cpp()[i] - b.data_cpp()[i]), 0, 1e-7);
+    }
+}
+
+TEST(CerealTest, Serialize_Observable) {
+    StateVector hoge(5);
+    hoge.set_Haar_random_state();
+    CPPCTYPE value = 0;
+    {
+        Observable obs;
+        obs.add_term(2.0, "X 0 X 1 Y 2 Z 4");
+        std::ofstream os("observable.cereal", std::ios::binary);
+        cereal::PortableBinaryOutputArchive archive(os);
+        archive(obs);
+        value = obs.get_expectation_value(&hoge);
+        os.close();
+    }
+    {
+        Observable obs;
+        std::ifstream is("observable.cereal", std::ios::binary);
+        cereal::PortableBinaryInputArchive archive(is);
+        archive(obs);
+        ASSERT_NEAR(abs(obs.get_expectation_value(&hoge) - value), 0, 1e-7);
+        ASSERT_NE(value, CPPCTYPE(0, 0));
     }
 }

@@ -75,7 +75,7 @@ public:
                 pauli_id = PAULI_ID_X;
             else if (this->_x[index] && this->_z[index])
                 pauli_id = PAULI_ID_Y;
-            if(pauli_id!=PAULI_ID_I){
+            if (pauli_id != PAULI_ID_I) {
                 _target_index.push_back(index);
                 _pauli_id.push_back(pauli_id);
             }
@@ -83,6 +83,18 @@ public:
     };
 
     ~MultiQubitPauliOperator(){};
+
+    /*
+     * シリアライズライブラリCereal用のsave/load関数
+     */
+    template <class Archive>
+    void save(Archive& ar) const {
+        ar(CEREAL_NVP(_target_index), CEREAL_NVP(_pauli_id));
+    }
+    template <class Archive>
+    void load(Archive& ar) {
+        ar(CEREAL_NVP(_target_index), CEREAL_NVP(_pauli_id));
+    }
 
     const std::vector<UINT>& get_pauli_id_list() const;
     const std::vector<UINT>& get_index_list() const;

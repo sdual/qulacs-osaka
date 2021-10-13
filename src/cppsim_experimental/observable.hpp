@@ -12,6 +12,19 @@
 #include <gpusim/stat_ops.h>
 #endif
 
+#include <cereal/access.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/complex.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
+#include <cppsim_experimental/state.hpp>
+#include <cppsim_experimental/type.hpp>
+
 #include "pauli_operator.hpp"
 #include "state.hpp"
 #include "type.hpp"
@@ -27,6 +40,44 @@ private:
 
 public:
     Observable(){};
+
+    /*
+     * シリアライズライブラリCereal用のsave/load関数
+     */
+    template <class Archive>
+    void save(Archive& ar) const {
+        ar(CEREAL_NVP(_pauli_terms), CEREAL_NVP(_coef_list));
+    }
+    template <class Archive>
+    void load(Archive& ar) {
+        ar(CEREAL_NVP(_pauli_terms), CEREAL_NVP(_coef_list));
+    }
+
+    /**
+     * Observableをシリアライズした結果を返す
+     * @return Observableをシリアライズした結果のバイト列
+     */
+    std::string dump_as_byte() const {
+        // serialize quantum gate
+        std::ostringstream ss;
+        {
+            cereal::PortableBinaryOutputArchive archive(ss);
+            archive(*this);
+        }
+        return ss.str();
+    }
+    /**
+     * 入力をデシリアライズしてObservableとして読み込む
+     * @param[in] obj シリアライズされたObservableのバイト列
+     */
+    void load_from_byte(std::string obj) {
+        // deserialize quantum gate
+        std::istringstream ss(obj);
+        {
+            cereal::PortableBinaryInputArchive archive(ss);
+            archive(*this);
+        }
+    }
 
     /**
      * Observable が保持する PauliOperator の個数を返す
