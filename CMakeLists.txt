@@ -63,7 +63,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 ##### set external projects #####
 include(ExternalProject)
-include(${CMAKE_SOURCE_DIR}/cmake_script/FetchContent.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_script/FetchContent.cmake)
 
 # Boost
 set(Boost_USE_STATIC_LIBS    ON)
@@ -77,8 +77,8 @@ endif()
 message(STATUS "Boost found at ${Boost_INCLUDE_DIRS}")
 
 # Eigen
-set(EIGEN_BUILD_DIR   ${CMAKE_BINARY_DIR}/eigen)
-set(EIGEN_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
+set(EIGEN_BUILD_DIR   ${CMAKE_CURRENT_BINARY_DIR}/eigen)
+set(EIGEN_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(EIGEN_INCLUDE_DIR ${EIGEN_INSTALL_DIR})
 ExternalProject_Add(
     eigen
@@ -87,7 +87,7 @@ ExternalProject_Add(
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
     INSTALL_COMMAND
-      ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen ${EIGEN_INCLUDE_DIR}/Eigen 
+      ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/Eigen ${EIGEN_INCLUDE_DIR}/Eigen
       && ${CMAKE_COMMAND} -E copy_directory ${EIGEN_BUILD_DIR}/src/eigen/unsupported ${EIGEN_INCLUDE_DIR}/unsupported
     TEST_COMMAND ""
 )
