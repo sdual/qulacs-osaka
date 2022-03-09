@@ -401,5 +401,5 @@ if(USE_PYTHON)
 endif()
 
 #dependency setting for ExternalProject
-add_dependencies(qulacs_core Cereal)
-add_dependencies(qulacs_core eigen)
+# add_dependencies(qulacs_core Cereal)
+# add_dependencies(qulacs_core eigen)
