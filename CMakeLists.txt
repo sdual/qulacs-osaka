@@ -94,8 +94,8 @@ ExternalProject_Add(
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIR})
 
 # Cereal
-set(CEREAL_BUILD_DIR   ${CMAKE_BINARY_DIR}/cereal)
-set(CEREAL_INSTALL_DIR ${CMAKE_SOURCE_DIR}/include)
+set(CEREAL_BUILD_DIR   ${CMAKE_CURRENT_BINARY_DIR}/cereal)
+set(CEREAL_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CEREAL_INCLUDE_DIR ${CEREAL_INSTALL_DIR})
 ExternalProject_Add(
     Cereal
