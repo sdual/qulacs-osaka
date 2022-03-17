@@ -227,7 +227,7 @@ if(MSYS OR MINGW OR UNIX OR APPLE)
 
 	# Enable simd
 	## Check if AVX2 is supported
-	include(${CMAKE_SOURCE_DIR}/cmake_script/FindAVX2.cmake)
+	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_script/FindAVX2.cmake)
 	CHECK_AVX2_LINUX()
 	message(STATUS "AVX2_FOUND = ${AVX2_FOUND}")
 	if(USE_SIMD AND AVX2_FOUND)
