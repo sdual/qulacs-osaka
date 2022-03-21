@@ -279,3 +279,33 @@ std::vector<double> ParametricQuantumCircuit::backprop(
     return ans;
 
 }  // CPP
+
+std::vector<double> ParametricQuantumCircuit::backprop_with_data(GeneralQuantumOperator* obs, ParametricQuantumCircuit* circuit_with_data) {
+    //オブザーバブルから、　最終段階での微分値を求めて、backprop_from_stateに流す関数
+    //上側から来た変動量 * 下側の対応する微分値 =
+    //最終的な変動量　になるようにする。
+
+    int n = this->qubit_count;
+    QuantumState* state = new QuantumState(n);
+    state->set_zero_state();
+    circuit_with_data->update_quantum_state(state);
+    this->update_quantum_state(state);  //一度最後までする
+    QuantumState* bistate = new QuantumState(n);
+    QuantumState* Astate = new QuantumState(n);  //一時的なやつ　
+
+    obs->apply_to_state(Astate, *state, bistate);
+    bistate->multiply_coef(2);
+    /*一度stateを最後まで求めてから、さらにapply_to_state している。
+    なぜなら、　量子のオブザーバブルは普通の機械学習と違って、　二乗した値の絶対値が観測値になる。
+    二乗の絶対値を微分したやつと、　値の複素共役*2は等しい
+
+    オブザーバブルよくわからないけど、テストしたらできてた
+    */
+
+    //ニューラルネットワークのbackpropにおける、後ろからの微分値的な役目を果たす
+    auto ans = backprop_inner_product(bistate);
+    delete bistate;
+    delete state;
+    delete Astate;
+    return ans;
+}
