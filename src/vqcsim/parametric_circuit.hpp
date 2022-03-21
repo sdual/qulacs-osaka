@@ -51,5 +51,7 @@ public:
         double initial_angle);
     virtual std::vector<double> backprop(GeneralQuantumOperator* obs);
     virtual std::vector<double> backprop_inner_product(QuantumState* bistate);
+    virtual std::vector<double> backprop_inner_product_with_data(QuantumState* bistate, ParametricQuantumCircuit* circuit_with_data);
     virtual std::vector<double> backprop_with_data(GeneralQuantumOperator* obs, ParametricQuantumCircuit* circuit_with_data);
+
 };
