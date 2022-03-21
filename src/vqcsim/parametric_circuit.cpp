@@ -349,7 +349,6 @@ std::vector<double> ParametricQuantumCircuit::backprop_inner_product_with_data(Q
     なので、両社にadjoint_gateを掛けている
     */
     QuantumState* Astate = new QuantumState(n);  //一時的なやつ
-    circuit_with_data->update_quantum_state(Astate);
     for (int i = num_gates - 1; i >= 0; i--) {
         QuantumGateBase* gate_now = this->gate_list[i];  // sono gate
         if (inverse_parametric_gate_position[i] != -1) {
