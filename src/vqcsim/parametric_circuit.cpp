@@ -390,7 +390,7 @@ std::vector<double> ParametricQuantumCircuit::backprop_inner_product_with_data(Q
     return ans;
 }
 std::vector<double> ParametricQuantumCircuit::backprop_inner_product_reuploading(QuantumState* bistate,
-    ParametricQuantumCircuit* param_circuit, std::vector<std::vector<double>> params) {
+    ParametricQuantumCircuit* param_circuit, std::vector<double> params, UINT num_layers, UINT num_param_in_layer) {
     // this はデータを保持している circuit と想定
 
     // circuitを実行した状態とbistateの、inner_productを取った結果を「値」として、それを逆誤差伝搬します
@@ -402,11 +402,13 @@ std::vector<double> ParametricQuantumCircuit::backprop_inner_product_reuploading
 
     // re-uploading. data encoding, parametric を繰り返す
     // params.size() は layer数
-    for (UINT layer_id = 0; layer_id < params.size(); layer_id++) {
+    UINT param_id = 0;
+    for (UINT layer_id = 0; layer_id < num_layers; layer_id++) {
         this->update_quantum_state(state);
 
-        for (UINT param_index = 0; param_index < params.at(layer_id).size(); param_index++) {
-            param_circuit->set_parameter(param_index, params.at(layer_id).at(param_index));
+        for (UINT param_index = 0; param_index < num_param_in_layer; param_index++) {
+            param_circuit->set_parameter(param_index, params.at(param_id));
+            param_id++;
         }
         param_circuit->update_quantum_state(state);
     }
@@ -483,7 +485,7 @@ std::vector<double> ParametricQuantumCircuit::backprop_inner_product_reuploading
 }
 
 std::vector<double> ParametricQuantumCircuit::backprop_reuploading(GeneralQuantumOperator* obs, ParametricQuantumCircuit* param_circuit,
-    std::vector<std::vector<double>> &params) {
+    std::vector<double> params, UINT num_layers, UINT num_param_in_layer) {
     //オブザーバブルから、　最終段階での微分値を求めて、backprop_from_stateに流す関数
     //上側から来た変動量 * 下側の対応する微分値 =
     //最終的な変動量　になるようにする。
@@ -494,11 +496,13 @@ std::vector<double> ParametricQuantumCircuit::backprop_reuploading(GeneralQuantu
 
     // re-uploading. data encoding, parametric を繰り返す
     // params.size() は layer数
-    for (UINT layer_id = 0; layer_id < params.size(); layer_id++) {
+    UINT param_id = 0;
+    for (UINT layer_id = 0; layer_id < num_layers; layer_id++) {
         this->update_quantum_state(state);
 
-        for (UINT param_index = 0; param_index < params.at(layer_id).size(); param_index++) {
-            param_circuit->set_parameter(param_index, params.at(layer_id).at(param_index));
+        for (UINT param_index = 0; param_index < num_param_in_layer; param_index++) {
+            param_circuit->set_parameter(param_index, params.at(param_id));
+            param_id++;
         }
         param_circuit->update_quantum_state(state);
     }
@@ -516,7 +520,7 @@ std::vector<double> ParametricQuantumCircuit::backprop_reuploading(GeneralQuantu
     */
 
     //ニューラルネットワークのbackpropにおける、後ろからの微分値的な役目を果たす
-    auto ans = backprop_inner_product_reuploading(bistate, param_circuit);
+    auto ans = backprop_inner_product_reuploading(bistate, param_circuit, num_layers, num_param_in_layer);
     delete bistate;
     delete state;
     delete Astate;
