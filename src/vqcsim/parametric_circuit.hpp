@@ -52,6 +52,8 @@ public:
     virtual std::vector<double> backprop(GeneralQuantumOperator* obs);
     virtual std::vector<double> backprop_inner_product(QuantumState* bistate);
     virtual std::vector<double> backprop_inner_product_with_data(QuantumState* bistate, ParametricQuantumCircuit* circuit_with_data);
+    virtual std::vector<double> backprop_inner_product_reuploading(QuantumState* bistate, std::vector<ParametricQuantumCircuit*> param_circuits);
     virtual std::vector<double> backprop_with_data(GeneralQuantumOperator* obs, ParametricQuantumCircuit* circuit_with_data);
+    virtual std::vector<double> backprop_reuploading(GeneralQuantumOperator* obs, std::vector<ParametricQuantumCircuit*> param_circuits);
 
 };
