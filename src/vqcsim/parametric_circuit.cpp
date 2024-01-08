@@ -520,7 +520,7 @@ std::vector<double> ParametricQuantumCircuit::backprop_reuploading(GeneralQuantu
     */
 
     //ニューラルネットワークのbackpropにおける、後ろからの微分値的な役目を果たす
-    auto ans = backprop_inner_product_reuploading(bistate, param_circuit, num_layers, num_param_in_layer);
+    auto ans = backprop_inner_product_reuploading(bistate, param_circuit, params, num_layers, num_param_in_layer);
     delete bistate;
     delete state;
     delete Astate;
